@@ -1,104 +1,59 @@
-# CSV Upload Processing App
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-This project fulfills the requirements for an upload dashboard that:
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-- Accepts CSV uploads through a web UI.
-- Stores upload metadata and rows in SQLite.
-- Processes uploads in the background using a Redis-backed queue.
-- Upserts product rows by `UNIQUE_KEY`, keeping the operation idempotent.
-- Refreshes upload status in real time from the browser via polling.
+## About Laravel
 
-## Prerequisites
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-- Node.js 16.x (project was created on 16.20.2)
-- Redis server (local or remote)
-- npm
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-## Quick Start
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-1. **Install dependencies**
+## Learning Laravel
 
-   ```bash
-   npm install
-   ```
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
 
-2. **Copy environment template**
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-   ```bash
-   cp env.sample .env
-   ```
+## Laravel Sponsors
 
-   Adjust values as needed (e.g., `REDIS_URL`).
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-3. **Start services**
+### Premium Partners
 
-   Terminal 1 – web server:
+- **[Vehikl](https://vehikl.com)**
+- **[Tighten Co.](https://tighten.co)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Redberry](https://redberry.international/laravel-development)**
+- **[Active Logic](https://activelogic.com)**
 
-   ```bash
-   npm run dev
-   ```
+## Contributing
 
-   Terminal 2 – background worker:
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-   ```bash
-   npm run worker
-   ```
+## Code of Conduct
 
-   Both commands will create the SQLite database (`data/app.sqlite`) on first run.
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
-4. **Open the UI**
+## Security Vulnerabilities
 
-   Visit [http://localhost:3000](http://localhost:3000) and use the “Choose File” button or drag & drop a CSV.
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
-## CSV Processing Details
+## License
 
-- Files are queued immediately after upload and processed asynchronously.
-- During processing:
-  - Rows are sanitized to remove non UTF-8 characters.
-  - Only the required columns are extracted:
-    - `UNIQUE_KEY`
-    - `PRODUCT_TITLE`
-    - `PRODUCT_DESCRIPTION`
-    - `STYLE#`
-    - `SANMAR_MAINFRAME_COLOR`
-    - `SIZE`
-    - `COLOR_NAME`
-    - `PIECE_PRICE`
-  - Each row is **upserted** using `UNIQUE_KEY` as the primary key.
-- The uploads table tracks status (`pending`, `processing`, `completed`, `failed`), total rows, processed rows, timestamps, and an error message if applicable.
-
-## Testing with Provided Files
-
-1. Upload `yoprint_test_import.csv` to seed the database.
-2. Upload `yoprint_test_updated.csv` to confirm that updates are applied to existing records instead of duplicating them.
-
-The history table on the UI will show the processing progress and outcome for each upload.
-
-## Project Structure
-
-```
-src/
-  config.js        // runtime configuration
-  db.js            // SQLite helpers and schema creation
-  queue.js         // Bull queue setup
-  server.js        // Express HTTP API and static UI hosting
-  worker.js        // Background job processor
-public/
-  index.html       // Upload dashboard
-uploads/           // Stored CSV files
-data/app.sqlite    // SQLite database (created at runtime)
-```
-
-## Development Notes
-
-- The UI polls `/api/uploads` every 5 seconds for near real-time updates.
-- Job retries are disabled by default; failures are surfaced on the upload history and logs.
-- Logs are written to stdout/stderr. Adjust as needed for production environments.
-
-## Possible Enhancements
-
-- Add authentication for multi-tenant environments.
-- Replace polling with WebSockets or Server-Sent Events.
-- Expose an API endpoint for processed product data.
-- Containerize the stack for easier deployment.
-
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
