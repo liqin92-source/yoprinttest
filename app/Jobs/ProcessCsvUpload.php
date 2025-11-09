@@ -39,16 +39,19 @@ class ProcessCsvUpload implements ShouldQueue
     {
         $upload = Upload::findOrFail($this->uploadId);
         $upload->markProcessing();
-        $upload->update([
-            'total_rows' => 0,
-            'processed_rows' => 0,
-        ]);
 
         $fullPath = Storage::path($this->path);
 
         if (! file_exists($fullPath)) {
             throw new Exception("Uploaded file not found: {$fullPath}");
         }
+
+        $totalRows = $this->countProcessableRows($fullPath);
+
+        $upload->update([
+            'total_rows' => $totalRows,
+            'processed_rows' => 0,
+        ]);
 
         $handle = fopen($fullPath, 'rb');
         if (! $handle) {
@@ -57,7 +60,6 @@ class ProcessCsvUpload implements ShouldQueue
 
         try {
             $header = null;
-            $total = 0;
             $processed = 0;
 
             while (($row = fgetcsv($handle)) !== false) {
@@ -71,18 +73,16 @@ class ProcessCsvUpload implements ShouldQueue
                     continue;
                 }
 
-                $total++;
                 $processed += $this->upsertProduct($record) ? 1 : 0;
 
-                if ($total % 25 === 0) {
+                if ($processed > 0 && $processed % 25 === 0) {
                     $upload->update([
-                        'total_rows' => $total,
                         'processed_rows' => $processed,
                     ]);
                 }
             }
 
-            $upload->markCompleted($processed, $total);
+            $upload->markCompleted($processed, $totalRows);
         } catch (Exception $exception) {
             $upload->markFailed($exception->getMessage());
             Log::error('CSV processing failed', [
@@ -100,6 +100,11 @@ class ProcessCsvUpload implements ShouldQueue
     {
         return array_map(function ($value) {
             $normalized = strtolower(trim((string) $value));
+
+            if (strncmp($normalized, "\xEF\xBB\xBF", 3) === 0) {
+                $normalized = substr($normalized, 3);
+            }
+
             $normalized = str_replace(['#', ' '], ['_number', '_'], $normalized);
 
             return $normalized;
@@ -108,6 +113,10 @@ class ProcessCsvUpload implements ShouldQueue
 
     private function mapRow(array $header, array $row): ?array
     {
+        if ($header === []) {
+            return null;
+        }
+
         if (count($row) !== count($header)) {
             return null;
         }
@@ -184,6 +193,34 @@ class ProcessCsvUpload implements ShouldQueue
         );
 
         return true;
+    }
+
+    private function countProcessableRows(string $fullPath): int
+    {
+        $handle = fopen($fullPath, 'rb');
+        if (! $handle) {
+            throw new Exception("Unable to open file {$fullPath}");
+        }
+
+        try {
+            $header = null;
+            $count = 0;
+
+            while (($row = fgetcsv($handle)) !== false) {
+                if ($header === null) {
+                    $header = $this->normalizeHeader($row);
+                    continue;
+                }
+
+                if ($this->mapRow($header, $row) !== null) {
+                    $count++;
+                }
+            }
+
+            return $count;
+        } finally {
+            fclose($handle);
+        }
     }
 }
 
